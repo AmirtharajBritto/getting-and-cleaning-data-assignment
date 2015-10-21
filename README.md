@@ -1,9 +1,8 @@
-Getting and Cleaning Data Course Project
-========================================
+# Getting and Cleaning Data Project
 
-# run_analysis.R
+## run_analysis.R
 
-This R script performs the following steps, as per the project assignment instructions:
+The cleanup script (run_analysis.R) does the following:
 
 1. Merges the training and the test sets to create one data set.
 2. Extracts only the measurements on the mean and standard deviation for each measurement. 
@@ -11,35 +10,43 @@ This R script performs the following steps, as per the project assignment instru
 4. Appropriately labels the data set with descriptive activity names. 
 5. Creates a second, independent tidy data set with the average of each variable for each activity and each subject. 
 
-## how to download the original data
+## Running the script
 
-This script assumes that you have already downloaded and unzipped the original Samsung data in a folder called _UCI HAR Dataset_. If this is not the case, you must first run the script called `download_corpus.R`. In your R enviroment, load it:
-
-```
-source('download_corpus.R')
-```
-This will download the corpus and unzip it. Now everything is ready for the analysis.
-
-## how to run the analysis
-
-In your R enviroment (in the same folder where the data files are), load the script:
+To run the script, source `run_analysis.R`. After running, you will see the following output as the script works:
 
 ```
-source('run_analysis.R')
+[run_analysis.R] Getting and Cleaning Data Project 
+[run_analysis.R] --- 
+[run_analysis.R] Starting up. 
+[run_analysis.R] Preparing to run analysis. 
+[run_analysis.R] Reading datasets. 
+[run_analysis.R] Getting dataset: /repos/Getting-and-Cleaning-Data-Project/data/test 
+[run_analysis.R]   reading features... 
+[run_analysis.R]   reading activities... 
+[run_analysis.R]   reading subjects... 
+[run_analysis.R] Getting dataset: /repos/Getting-and-Cleaning-Data-Project/data/train 
+[run_analysis.R]   reading features... 
+[run_analysis.R]   reading activities... 
+[run_analysis.R]   reading subjects... 
+[run_analysis.R] Joining datasets. 
+[run_analysis.R] Melting. 
+[run_analysis.R] Dcasting. 
+[run_analysis.R] Saving clean data to: /repos/Getting-and-Cleaning-Data-Project/data/cleaned.txt 
 ```
 
-The end result will be a file called `final_tidy_dataset.txt'` in the `output` folder.
+## Process
 
-```
-$ ls output/
--rw-rw-r--  225125 final_tidy_dataset.csv
--rw-rw-r--  225122 final_tidy_dataset.txt
--rw-rw-r-- 8338031 whole_dataset_with_descriptive_activity_names.csv
-```
+1. For both the test and train datasets, produce an interim dataset:
+    1. Extract the mean and standard deviation features (listed in CodeBook.md, section 'Extracted Features'). This is the `values` table.
+    2. Get the list of activities.
+    3. Put the activity *labels* (not numbers) into the `values` table.
+    4. Get the list of subjects.
+    5. Put the subject IDs into the `values` table.
+2. Join the test and train interim datasets.
+3. Put each variable on its own row.
+4. Rejoin the entire table, keying on subject/acitivity pairs, applying the mean function to each vector of values in each subject/activity pair. This is the clean dataset.
+5. Write the clean dataset to disk.
 
-`final_tidy_dataset.csv` mirrors the .txt file in .csv format for your convenience.
-`whole_dataset_with_descriptive_activity_names.csv` is an intermediate file used during the analysis.
+## Cleaned Data
 
-## final tidy dataset
-
-Each row in the final, clean dataset contains _subject_, _activity_, and _measures_ for all required features (i.e., mean or standard deviation).
+The resulting clean dataset is in this repository at: /cleaned.txt`. It contains one row for each subject/activity pair and columns for subject, activity, and each feature that was a mean or standard deviation from the original dataset.
