@@ -1,65 +1,97 @@
-# the 'run_analysis.R' script does the following:
+library(reshape2)
 
-# 1) Merges the training and the test sets to create one data set.
+clean.file <- "cleaned.txt"
+extracted.features <- c(1, 2, 3, 4, 5, 6, 41, 42, 43, 44, 45, 46, 81, 82, 83, 84, 85, 86, 121, 122, 123, 124, 125, 126, 161, 162, 163, 164, 165, 166, 201, 202, 214, 215, 227, 228, 240, 241, 253, 254, 266, 267, 268, 269, 270, 271, 345, 346, 347, 348, 349, 350, 424, 425, 426, 427, 428, 429, 503, 504, 516, 517, 529, 530, 542, 543)
+extracted.feature.names <- c("tBodyAcc-mean()-X", "tBodyAcc-mean()-Y", "tBodyAcc-mean()-Z", "tBodyAcc-std()-X", "tBodyAcc-std()-Y", "tBodyAcc-std()-Z", "tGravityAcc-mean()-X", "tGravityAcc-mean()-Y", "tGravityAcc-mean()-Z", "tGravityAcc-std()-X", "tGravityAcc-std()-Y", "tGravityAcc-std()-Z", "tBodyAccJerk-mean()-X", "tBodyAccJerk-mean()-Y", "tBodyAccJerk-mean()-Z", "tBodyAccJerk-std()-X", "tBodyAccJerk-std()-Y", "tBodyAccJerk-std()-Z", "tBodyGyro-mean()-X", "tBodyGyro-mean()-Y", "tBodyGyro-mean()-Z", "tBodyGyro-std()-X", "tBodyGyro-std()-Y", "tBodyGyro-std()-Z", "tBodyGyroJerk-mean()-X", "tBodyGyroJerk-mean()-Y", "tBodyGyroJerk-mean()-Z", "tBodyGyroJerk-std()-X", "tBodyGyroJerk-std()-Y", "tBodyGyroJerk-std()-Z", "tBodyAccMag-mean()", "tBodyAccMag-std()", "tGravityAccMag-mean()", "tGravityAccMag-std()", "tBodyAccJerkMag-mean()", "tBodyAccJerkMag-std()", "tBodyGyroMag-mean()", "tBodyGyroMag-std()", "tBodyGyroJerkMag-mean()", "tBodyGyroJerkMag-std()", "fBodyAcc-mean()-X", "fBodyAcc-mean()-Y", "fBodyAcc-mean()-Z", "fBodyAcc-std()-X", "fBodyAcc-std()-Y", "fBodyAcc-std()-Z", "fBodyAccJerk-mean()-X", "fBodyAccJerk-mean()-Y", "fBodyAccJerk-mean()-Z", "fBodyAccJerk-std()-X", "fBodyAccJerk-std()-Y", "fBodyAccJerk-std()-Z", "fBodyGyro-mean()-X", "fBodyGyro-mean()-Y", "fBodyGyro-mean()-Z", "fBodyGyro-std()-X", "fBodyGyro-std()-Y", "fBodyGyro-std()-Z", "fBodyAccMag-mean()", "fBodyAccMag-std()", "fBodyBodyAccJerkMag-mean()", "fBodyBodyAccJerkMag-std()", "fBodyBodyGyroMag-mean()", "fBodyBodyGyroMag-std()", "fBodyBodyGyroJerkMag-mean()", "fBodyBodyGyroJerkMag-std()")
+activities <- c(1, 2, 3, 4, 5, 6)
+activity.names <- c("WALKING", "WALKING_UPSTAIRS", "WALKING_DOWNSTAIRS", "SITTING", "STANDING", "LAYING")
 
-make_subject_dataset <- function() {
-  subject_test <- read.table('./UCI HAR Dataset/test/subject_test.txt')
-  subject_train <- read.table('./UCI HAR Dataset/train/subject_train.txt')
-  subject_merged <- rbind(subject_train, subject_test)
-  names(subject_merged) <- "subject"
-  subject_merged
+# A helper method for printing to the console.
+p <- function(...) {
+  cat("[run_analysis.R]", ..., "\n")
 }
 
-make_X_dataset <- function() {
-  X_test <- read.table('./UCI HAR Dataset/test/X_test.txt')
-  X_train <- read.table('./UCI HAR Dataset/train/X_train.txt')
-  X_merged  <- rbind(X_train, X_test)
+# Makes a features filename given a dataset name.
+features.file <- function(name) {
+  paste("X_", name, ".txt", sep = "")
 }
 
-make_y_dataset <- function() {
-  y_test <- read.table('./UCI HAR Dataset/test/y_test.txt')
-  y_train <- read.table('./UCI HAR Dataset/train/y_train.txt')
-  y_merged  <- rbind(y_train, y_test)
+# Makes an activities filename given a dataset name.
+activities.file <- function(name) {
+  paste("Y_", name, ".txt", sep = "")
 }
 
-subject_dataset <- make_subject_dataset()
-X_dataset <- make_X_dataset()
-y_dataset <- make_y_dataset()
-
-
-# 2) Extracts only the measurements on the mean and standard deviation for each measurement. 
-
-get_selected_measurements <- function() {
-  features <- read.table('./UCI HAR Dataset/features.txt', header=FALSE, col.names=c('id', 'name'))
-  feature_selected_columns <- grep('mean\\(\\)|std\\(\\)', features$name)
-  filtered_dataset <- X_dataset[, feature_selected_columns]
-  names(filtered_dataset) <- features[features$id %in% feature_selected_columns, 2]
-  filtered_dataset
+# Makes a subjects filename given a dataset name.
+subjects.file <- function(name) {
+  paste("subject_", name, ".txt", sep = "")
 }
 
-X_filtered_dataset <- get_selected_measurements()
+# Returns an interim dataframe for a single dataset.
+get.data <- function(dir, name) {
+  # Setup the file paths.
+  real.dir <- file.path(dir, name)
+  features.name <- file.path(real.dir, features.file(name))
+  activities.name <- file.path(real.dir, activities.file(name))
+  subjects.name <- file.path(real.dir, subjects.file(name))
 
-# 3) Uses descriptive activity names to name the activities in the data set
+  p("Getting dataset:", real.dir)
 
-activity_labels <- read.table('./UCI HAR Dataset/activity_labels.txt', header=FALSE, col.names=c('id', 'name'))
+  # Read the features table.
+  p("  reading features...")
+  features.t <- read.table(features.name)[extracted.features]
+  names(features.t) <- extracted.feature.names
 
+  clean.data <- features.t
 
-# 4) Appropriately labels the data set with descriptive activity names. 
+  # Read the activities list.
+  p("  reading activities...")
+  activities.t <- read.table(activities.name)
+  names(activities.t) <- c("activity")
+  activities.t$activity <- factor(activities.t$activity, levels = activities, labels = activity.names)
+  clean.data <- cbind(clean.data, activity = activities.t$activity)
 
-y_dataset[, 1] = activity_labels[y_dataset[, 1], 2]
-names(y_dataset) <- "activity"
+  # Read the subjects list.
+  p("  reading subjects...")
+  subjects.t <- read.table(subjects.name)
+  names(subjects.t) <- c("subject")
+  clean.data <- cbind(clean.data, subject = subjects.t$subject)
 
+  # Return the clean data
+  clean.data
+}
 
-# 5.1) Creates an intermediate dataset with all required measurements.
+# Performs the full analysis of both the test and train
+# datasets. Writes a clean dataset to disk.
+run.analysis <- function(dir) {
+  p("Getting and Cleaning Data Project")
+  p("Author: William Bowers")
+  p("---")
+  p("Starting up.")
+  p("Preparing to run analysis.")
 
-whole_dataset <- cbind(subject_dataset, y_dataset, X_filtered_dataset)
-write.csv(whole_dataset, "./output/whole_dataset_with_descriptive_activity_names.csv")
+  # Read the data.
+  p("Reading datasets.")
+  test <- get.data(dir, "test")
+  train <- get.data(dir, "train")
 
+  # Join the data.
+  p("Joining datasets.")
+  all.data <- rbind(test, train)
 
-# 5.2) Creates the final, independent tidy data set with the average of each variable for each activity and each subject.
+  # Reshape the data.
+  p("Melting.")
+  all.data.long <- melt(all.data, id = c("subject", "activity"))
+  p("Dcasting.")
+  all.data.wide <- dcast(all.data.long, subject + activity ~ variable, mean)
 
-measurements <- whole_dataset[, 3:dim(whole_dataset)[2]]
-tidy_dataset <- aggregate(measurements, list(whole_dataset$subject, whole_dataset$activity), mean)
-names(tidy_dataset)[1:2] <- c('subject', 'activity')
-write.csv(tidy_dataset, "./output/final_tidy_dataset.csv")
-write.table(tidy_dataset, "./output/final_tidy_dataset.txt")
+  # Set the clean data.
+  all.data.clean <- all.data.wide
+
+  # Save the clean data.
+  clean.file.name <- file.path(dir, clean.file)
+  p("Saving clean data to:", clean.file.name)
+  write.table(all.data.clean, clean.file.name, row.names = FALSE, quote = FALSE)
+}
+
+# Run the analysis.
+run.analysis("/repos/Getting-and-Cleaning-Data-Project/data")
