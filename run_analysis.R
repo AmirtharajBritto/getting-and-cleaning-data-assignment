@@ -64,7 +64,6 @@ get.data <- function(dir, name) {
 # datasets. Writes a clean dataset to disk.
 run.analysis <- function(dir) {
   p("Getting and Cleaning Data Project")
-  p("Author: William Bowers")
   p("---")
   p("Starting up.")
   p("Preparing to run analysis.")
